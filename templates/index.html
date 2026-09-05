@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🌿 Plant Disease Detection</h1>
+            <p class="subtitle">Upload a plant leaf image to detect diseases</p>
+
+            {% if error %}
+            <div class="error-box">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="form-group">
+                    <div class="file-input-wrapper">
+                        <input type="file" name="file" id="fileInput" accept=".png,.jpg,.jpeg,.gif" required>
+                        <label for="fileInput" class="file-input-label">
+                            📁 Click to upload or drag and drop
+                        </label>
+                        <div class="file-name" id="fileName"></div>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn">🔍 Predict Disease</button>
+            </form>
+
+            {% if img_path and prediction %}
+            <div class="result-section">
+                <img src="{{ img_path }}" alt="Uploaded plant image" class="result-image">
+                
+                <div class="prediction-box">
+                    <div class="success-icon">✓</div>
+                    <div class="disease-name">{{ prediction }}</div>
+                    <div class="confidence-text">
+                        Confidence: <span class="confidence-value">{{ (confidence*100)|round(2) }}%</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const fileInputLabel = document.querySelector('.file-input-label');
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Show file name when selected
+        fileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                
+                if (file.size > maxSize) {
+                    fileName.textContent = '❌ File too large (max 10MB)';
+                    fileName.style.color = '#c33';
+                    submitBtn.disabled = true;
+                } else {
+                    fileName.textContent = '📄 Selected: ' + file.name;
+                    fileName.style.color = '#666';
+                    submitBtn.disabled = false;
+                    fileInputLabel.classList.add('active');
+                }
+            }
+        });
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            fileInputLabel.classList.add('active');
+        }
+
+        function unhighlight(e) {
+            fileInputLabel.classList.remove('active');
+        }
+
+        fileInputLabel.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
+
+        // Form validation
+        uploadForm.addEventListener('submit', function(e) {
+            if (!fileInput.files || !fileInput.files[0]) {
+                e.preventDefault();
+                alert('Please select a file');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '⏳ Processing...';
+            }
+        });
+
+        // Reset button on page load
+        window.addEventListener('load', function() {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🔍 Predict Disease';
+        });
+    </script>
+</body>
+</html>
